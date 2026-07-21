@@ -52,6 +52,10 @@ BATHY_DISTANCE_THRESHOLD <- 5
 # Fixed channel width (m) used for the width-to-depth ratio
 W_FIXED <- 500
 
+# Reference bar height (m): interpercentile range P90-P10 of bed elevations,
+# averaged over the six surveys with a submerged bar. See manuscript section 2.
+H_BAR <- 2.30
+
 
 # -----------------------------------------------------------------------------
 # 3. BASIC LOADING / UNIT CONVERSION FUNCTIONS
@@ -87,9 +91,12 @@ convert_power_to_flux <- function(data) {
   return(data)
 }
 
-#' Compute a "proximity index" from altitude and water depth:
-#'   proximity_index = altitude / water_surface_altitude
-#'                      (1 = point near the surface, 0 = deeply submerged)
+#' Compute a "proximity index" and the relative submergence from altitude
+#' and water depth:
+#'   proximity_index       = altitude / water_surface_altitude
+#'                           (1 = point near the surface, 0 = deeply submerged)
+#'   relative_submergence  = water_height / H_BAR
+#'                           (local flow depth in units of bar height)
 compute_proximity_index <- function(data) {
   
   if (!all(c("altitude", "depth") %in% colnames(data))) {
@@ -100,6 +107,10 @@ compute_proximity_index <- function(data) {
   data$water_height   <- abs(data$depth)
   data$water_altitude  <- data$altitude + data$water_height
   data$proximity_index <- data$altitude / data$water_altitude
+  
+  # Relative submergence = local flow depth normalized by bar height
+  # (dimensionless; the index used in the manuscript)
+  data$relative_submergence <- data$water_height / H_BAR
   
   # Handle division-by-zero edge cases
   data$proximity_index[is.infinite(data$proximity_index)] <- NA
